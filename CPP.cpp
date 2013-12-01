@@ -97,15 +97,6 @@ const GLfloat srcNormals[ NUM_NORMALS ][3] = {
   {-1, 0, 0}
 };
 
-struct XorRandGenerator {
-  uint32_t operator()( uint32_t & gen ) {
-    gen ^= gen << 13;
-    gen ^= gen >> 17;
-    gen ^= gen << 5;
-    return gen;
-  }
-};
-
 template<class RandGenerator>
 class Particles {
   int numPts_;
@@ -246,7 +237,9 @@ class GLRenderer {
   double spwnTmr_;
   double cleanupTmr_;
 public:
-  GLRenderer( const uint32_t randSeed ) :
+  GLRenderer( RandGenerator randGenerator,
+              const uint32_t randSeed ) :
+    randGenerator_( randGenerator ),
     randValue_( randSeed ),
     gVBO_( 0 ),
     particles_( randGenerator_, MAX_PTS ),
@@ -352,7 +345,14 @@ int main(int argc, char* argv[]) {
   glfwMakeContextCurrent(window);
   glfwSwapInterval(0);
 
-  GLRenderer<XorRandGenerator> glRenderer( RAND_SEED );
+  auto randGenerator = [](uint32_t & gen)->uint32_t {
+    gen ^= gen << 13;
+    gen ^= gen >> 17;
+    gen ^= gen << 5;
+    return gen;
+  };
+
+  GLRenderer<decltype(randGenerator)> glRenderer( randGenerator, RAND_SEED );
   glRenderer.initScene();
 
   GLenum glewError = glewInit();
